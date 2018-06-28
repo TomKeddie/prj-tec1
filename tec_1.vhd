@@ -10,9 +10,13 @@ use std.textio.all;
 
 
 entity tec_1 is
+  generic
+  (
+    g_sim : boolean := false
+  );
   port
     (
-      clk_32      : in  std_logic;
+      clk_in      : in  std_logic;
       reset_in    : in  std_logic := '0';
       -- TM1638 display data
       tm1638_data : out std_logic;
@@ -124,7 +128,7 @@ begin
   nINT    <= '1';
   nBUSRQ  <= '1';
   nNMI    <= '1';
-  clk_cpu <= CLK_32;
+  clk_cpu <= clk_in;
   CLK     <= clk_cpu;
   ------------------------------------------------------------------------------------------
   -- DATA bus
@@ -225,96 +229,115 @@ begin
 
 
     signal clk_divider   : natural range 15 downto 0                 := 0;
-    type t_cstate is (cstate_load, cstate_strobe, cstate_shift);
-    signal cstate        : t_cstate                                  := cstate_load;
-    type t_dstate is (dstate_command1, dstate_command2, dstate_command3, dstate_data, dstate_command4);
-    signal dstate        : t_dstate                                  := dstate_command1;
+    type t_state is (state_idle, state_command1, state_strobe1, state_command2, state_strobe2, state_command3, state_data, state_strobe4, state_command4);
+    signal state         : t_state                                   := state_idle;
+    signal next_state    : t_state                                   := state_command1;
     signal current_digit : natural range seven_segment_display'range := seven_segment_display'high;
+    signal next_digit    : natural range seven_segment_display'range := seven_segment_display'high;
     signal data          : std_logic_vector(7 downto 0)              := (others => '0');
     signal data_valid    : boolean                                   := false;
     signal current_bit   : natural range data'range                  := data'high;
-    signal state_change  : boolean                                   := false;
   begin
+  
+    tm1638_data <= data(current_bit);
+  
     process(clk_cpu, reset)
     begin
       if reset = '1' then
-        tm1638_data <= '0';
         tm1638_clk  <= '0';
         tm1638_stb  <= '0';
       elsif rising_edge(clk_cpu) then
+        -- divide clock
         if clk_divider /= 15 then
           clk_divider <= clk_divider + 1;
         else
           clk_divider <= 0;
         end if;
 
-        state_change <= false;
+        -- run clock where data is valid
         if clk_divider > 7 then
-          if clk_divider = 15 then
-            state_change <= true;
-          end if;
           if data_valid then
             tm1638_clk <= '1';
           end if;
         else
-          tm1638_clk  <= '0';
+          tm1638_clk <= '0';
         end if;
 
-        if state_change then
-          if data_valid then
-            tm1638_data <= data(current_bit);
-            if current_bit = data'low then
-              data_valid  <= false;
-              current_bit <= data'high;
-            else
-              current_bit <= current_bit - 1;
-            end if;
+        -- change state on falling edge of tm1638_clk 
+        if clk_divider = 15 and not data_valid then
+          state <= next_state;
+        end if;
+
+        -- shift out data on falling edge where valid
+        if clk_divider = 15 and data_valid then
+          if current_bit = data'low then
+            data_valid  <= false;
+            current_bit <= data'high;
+            state <= next_state;
           else
-            case cstate is
-              when cstate_load =>
-                cstate <= cstate_strobe;
-                case dstate is
-                  when dstate_command1 =>
-                    data       <= c_command1;
-                    data_valid <= true;
-                    dstate     <= dstate_command2;
-                  when dstate_command2 =>
-                    data       <= c_command2;
-                    data_valid <= true;
-                    dstate     <= dstate_command3;
-                  when dstate_command3 =>
-                    data       <= c_command3;
-                    data_valid <= true;
-                    cstate     <= cstate_shift;  -- override, no strobe before data
-                    dstate     <= dstate_data;
-                  when dstate_command4 =>
-                    data       <= c_command4;
-                    data_valid <= true;
-                    dstate     <= dstate_command1;
-                  when dstate_data =>
-                    data       <= seven_segment_display(current_digit);
-                    data_valid <= true;
-                    if current_digit = seven_segment_display'low then
-                      current_digit <= seven_segment_display'high;
-                      dstate        <= dstate_command4;
-                    else
-                      current_digit <= current_digit - 1;
-                    end if;
-                  when others =>
-                    dstate <= dstate_command1;
-                end case;
-              when cstate_strobe =>
-              when cstate_shift =>
-              when others =>
-                cstate <= cstate_load;
-            end case;
+            current_bit <= current_bit - 1;
           end if;
         end if;
+
+        -- state
+        case state is
+          when state_command1 =>
+            next_state <= state_strobe1;
+          when state_strobe1 =>
+            next_state <= state_command2;
+          when state_command2 =>
+            next_state <= state_strobe2;
+          when state_strobe2 =>
+            next_state <= state_command3;
+          when state_command3 =>
+            next_state <= state_data;
+          when state_data =>
+            if current_digit = seven_segment_display'low then
+              next_digit <= seven_segment_display'high;
+              next_state <= state_strobe4;
+            elsif not data_valid then
+              next_digit <= next_digit - 1;
+            end if;
+          when state_strobe4 =>
+              next_state <= state_command4;
+          when state_command4 =>
+            next_state <= state_idle;
+          when others =>                -- idle
+            next_state <= state_command1;
+        end case;
+
+        -- data
+        if not data_valid then
+          tm1638_stb <= '0';
+          case state is
+            when state_command1 =>
+              data       <= c_command1;
+              data_valid <= true;
+            when state_strobe1|state_strobe2|state_strobe4 =>
+              tm1638_stb <= '1';
+            when state_command2 =>
+              data       <= c_command2;
+              data_valid <= true;
+            when state_command3 =>
+              data       <= c_command3;
+              data_valid <= true;
+            when state_command4 =>
+              data       <= c_command4;
+              data_valid <= true;
+            when state_data =>
+              data       <= seven_segment_display(current_digit);
+              current_digit <= next_digit;
+              data_valid <= true;
+            when others =>              -- idle
+              tm1638_stb <= '1';
+          end case;
+        end if;
+
       end if;
     end process;
   end block;
 
-  z80_top_direct_n_1 : entity work.z80_top_direct_n
+  z80_top_direct_n_1 : z80_top_direct_n
     port map (
       nM1     => nM1,
       nMREQ   => nMREQ,
