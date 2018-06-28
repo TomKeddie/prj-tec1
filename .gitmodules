@@ -1,0 +1,6 @@
+[submodule "A-Z80"]
+	path = A-Z80
+	url = https://github.com/gdevic/A-Z80.git
+[submodule "boards/arty/Digilent-Arty"]
+	path = boards/arty/Digilent-Arty
+	url = git@github.com:TomKeddie/Arty.git
