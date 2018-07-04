@@ -43,11 +43,14 @@ end entity;
 
 
 architecture rtl of top is
+  constant c_clock_freq : natural := 4_000_000;
+
   signal clk_in        : std_logic;
   signal clk_2m        : std_logic;
   signal clk_4m        : std_logic;
   signal clk_2m_toggle : std_logic := '0';
   signal clk_4m_toggle : std_logic := '0';
+  signal clk           : std_logic;
 
   signal reset       : std_logic := '0';
   signal mmcm_locked : std_logic;
@@ -59,13 +62,15 @@ architecture rtl of top is
   signal keypad_column : std_logic_vector(3 downto 0) := (others => '0');
 
   signal keypad_data : std_logic_vector(4 downto 0) := (others => '0');
-  signal keypad_dv   : std_logic                    := '0';
+  signal keypad_data_v   : std_logic                    := '0';
 
 
 begin
 
-  keypad_row     <= jc(7 downto 4);
-  jc(3 downto 0) <= keypad_column;
+  -- 2MHz or 4MHz clock
+  clock_4mhz_gen : if c_clock_freq = 4_000_000 generate
+    clk <= clk_4m;
+  end generate;
 
   mmcm_b : block
     signal clk_100m_ibuf : std_logic;
@@ -140,7 +145,46 @@ begin
     end process;
   end block;
 
+  keypad_b : block
+    constant c_2_5_ms_divider : natural := integer((0.0025 * real(c_clock_freq)) - 1.0);
 
+    signal divider : natural range 0 to c_2_5_ms_divider := 0;
+    signal allkeys : std_logic_vector(keypad_column'length*keypad_row'length-1 downto 0) := (others => '0');
+    signal allkeys_1d : std_logic_vector(allkeys'range) := (others => '0'); 
+    signal allkeys_2d : std_logic_vector(allkeys'range) := (others => '0'); 
+    signal column : natural range keypad_column'length-1 downto 0 := 0;
+  begin
+    keypad_column <= "0001" when column = 0 else "0010" when column = 1 else "0100" when column = 2 else "1000";
+
+    keypad_p : process(clk)
+    begin
+      if rising_edge(clk) then
+        keypad_data_v <= '0';
+        if divider = 0 then
+          divider <= c_2_5_ms_divider;
+          -- column scanning
+          if column = 0 then
+            column <= keypad_column'length-1;
+            -- look for keypress 
+            allkeys_1d <= allkeys;
+            allkeys_2d <= allkeys_1d;
+            for ix in allkeys'range loop
+              if allkeys_2d(ix) = '0' and allkeys_1d(ix) = '1' and allkeys(ix) = '1' then
+                keypad_data <= std_logic_vector(to_unsigned(ix, keypad_data'length));
+                keypad_data_v <= '1';
+              end if;
+            end loop;
+          else
+            column <= column - 1;
+          end if;
+          -- sample each row, pipeline previous data
+          allkeys(column*keypad_column'length+3 downto column*keypad_column'length) <= keypad_row;
+        else
+          divider <= divider - 1;
+        end if;
+      end if;
+    end process;
+  end block;
 
   tec1_1 : entity work.tec1
     generic map (
@@ -148,18 +192,22 @@ begin
       g_util_filename    => g_util_filename,
       g_sim              => g_sim)
     port map (
-      clk_in       => clk_2m,
+      clk_in       => clk,
       reset_in     => reset,
       clock_locked => mmcm_locked,
       tm1638_data  => tm1638_data,
       tm1638_clk   => tm1638_clk,
       tm1638_stb   => tm1638_stb,
       keypad_in    => keypad_data,
-      keypad_dv    => keypad_dv);
+      keypad_dv    => keypad_data_v);
 
   -- PMOD B
   jb(0) <= tm1638_clk;
   jb(1) <= tm1638_data;
   jb(2) <= tm1638_stb;
+  -- PMOD C
+  keypad_row     <= jc(7 downto 4);
+  jc(3 downto 0) <= keypad_column;
+
 
 end architecture;
