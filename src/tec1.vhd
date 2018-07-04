@@ -9,23 +9,30 @@ library std;
 use std.textio.all;
 
 
-entity tec_1 is
+entity tec1 is
   generic
-  (
-    g_sim : boolean := false
-  );
+    (
+      g_sim              : boolean := false;
+      g_monitor_filename : string;
+      g_util_filename    : string
+      );
   port
     (
-      clk_in      : in  std_logic;
-      reset_in    : in  std_logic := '0';
+      clk_in       : in  std_logic;
+      reset_in     : in  std_logic := '0';
+      clock_locked : in  std_logic := '1';
       -- TM1638 display data
-      tm1638_data : out std_logic;
-      tm1638_clk  : out std_logic;
-      tm1638_stb  : out std_logic
+      tm1638_data  : out std_logic;
+      tm1638_clk   : out std_logic;
+      tm1638_stb   : out std_logic;
+      -- MISC io
+      speaker_out  : out std_logic;
+      keypad_in    : in  std_logic_vector(4 downto 0);
+      keypad_dv    : in  std_logic
       );
 end entity;
 
-architecture rtl of tec_1 is
+architecture rtl of tec1 is
 
   component z80_top_direct_n port (
     nM1     : out std_logic;
@@ -73,10 +80,10 @@ architecture rtl of tec_1 is
   constant c_io_addr_display_digits   : std_logic_vector(2 downto 0) := "001";
   constant c_io_addr_display_segments : std_logic_vector(2 downto 0) := "010";
 
-  signal rom0_mon2 : t_2kX8_memory := init_from_file("mon2.hex");
+  signal rom0_mon2 : t_2kX8_memory := init_from_file(g_monitor_filename);
   signal ram1      : t_2kX8_memory;
   signal ram2      : t_2kX8_memory;
-  signal rom3      : t_2kX8_memory := init_from_file("util.hex");
+  signal rom3      : t_2kX8_memory := init_from_file(g_util_filename);
 
   signal rom0_rd : std_logic;
   signal ram1_wr : std_logic;
@@ -85,18 +92,20 @@ architecture rtl of tec_1 is
   signal ram2_rd : std_logic;
   signal rom3_rd : std_logic;
 
+  signal keypad_rd             : std_logic;
   signal display_segments_wr   : std_logic;
   signal display_segments      : std_logic_vector(7 downto 0) := (others => '0');
   signal display_digits_wr     : std_logic;
   signal display_digits        : std_logic_vector(5 downto 0) := (others => '0');
   type t_display_segments is array(display_digits'range) of std_logic_vector(display_segments'range);
   signal seven_segment_display : t_display_segments           := (others => x"55");
+  signal keypad_data           : std_logic_vector(4 downto 0) := (others => '0');
 
   signal speaker : std_logic;
 
-  signal clock_locked : std_logic := '1';
   signal clk_cpu      : std_logic;
   signal reset        : std_logic := '1';
+  signal clock_stable : std_logic := '0';
 
   signal nM1     : std_logic;
   signal nMREQ   : std_logic;
@@ -118,8 +127,33 @@ architecture rtl of tec_1 is
   signal DOUT    : std_logic_vector(7 downto 0);
 
 begin
-  reset  <= '1' when clock_locked = '0' or reset_in = '1' else '0';
+
+  reset  <= '1' when clock_stable = '0' or reset_in = '1' else '0';
   nRESET <= not reset;
+
+  reset_b : block
+    signal hysteresis : unsigned(7 downto 0) := (others => '0');
+  begin
+    reset_p : process(clk_cpu)
+    begin
+      if rising_edge(clk_cpu) then
+        -- release reset once clock lock is stable
+        if clock_locked = '0' then
+          hysteresis   <= (others => '0');
+          clock_stable <= '0';
+        elsif hysteresis = (hysteresis'range => '1') then
+          clock_stable <= '1';
+        else
+          hysteresis <= hysteresis - 1;
+        end if;
+      end if;
+    end process;
+  end block;
+  ------------------------------------------------------------------------------------------
+  -- misc io
+  ------------------------------------------------------------------------------------------
+  speaker_out <= speaker;
+  nNMI        <= '0' when keypad_dv = '1' else '1';  -- interrupt on keypress
 
   ------------------------------------------------------------------------------------------
   -- tie off
@@ -127,7 +161,6 @@ begin
   nWAIT   <= '1';
   nINT    <= '1';
   nBUSRQ  <= '1';
-  nNMI    <= '1';
   clk_cpu <= clk_in;
   CLK     <= clk_cpu;
   ------------------------------------------------------------------------------------------
@@ -149,6 +182,7 @@ begin
   ------------------------------------------------------------------------------------------
   -- IO
   ------------------------------------------------------------------------------------------
+  keypad_rd           <= '1' when A(2 downto 0) = c_io_addr_keypad and nWR = '0' and nIORQ = '0'           else '0';
   display_segments_wr <= '1' when A(2 downto 0) = c_io_addr_display_segments and nWR = '0' and nIORQ = '0' else '0';
   display_digits_wr   <= '1' when A(2 downto 0) = c_io_addr_display_digits and nWR = '0' and nIORQ = '0'   else '0';
 
@@ -195,9 +229,21 @@ begin
         display_digits <= DOUT(5 downto 0);
         -- speaker uses same address
         speaker        <= DOUT(7);
+      elsif keypad_rd = '1' then
+        DIN(4 downto 0) <= keypad_data;
       end if;
     end if;
   end process;
+
+  keypad_p : process(clk_cpu)
+  begin
+    if rising_edge(clk_cpu) then
+      if keypad_dv = '1' then
+        keypad_data <= keypad_in;
+      end if;
+    end if;
+  end process;
+
   -- TM1638 display driver
   -- min clock period is 800ns (1.25MHz)
   -- min strobe pulse width is 1us (1 MHz)
@@ -238,14 +284,14 @@ begin
     signal data_valid    : boolean                                   := false;
     signal current_bit   : natural range data'range                  := data'high;
   begin
-  
+
     tm1638_data <= data(current_bit);
-  
+
     process(clk_cpu, reset)
     begin
       if reset = '1' then
-        tm1638_clk  <= '0';
-        tm1638_stb  <= '0';
+        tm1638_clk <= '0';
+        tm1638_stb <= '0';
       elsif rising_edge(clk_cpu) then
         -- divide clock
         if clk_divider /= 15 then
@@ -273,7 +319,7 @@ begin
           if current_bit = data'low then
             data_valid  <= false;
             current_bit <= data'high;
-            state <= next_state;
+            state       <= next_state;
           else
             current_bit <= current_bit - 1;
           end if;
@@ -299,7 +345,7 @@ begin
               next_digit <= next_digit - 1;
             end if;
           when state_strobe4 =>
-              next_state <= state_command4;
+            next_state <= state_command4;
           when state_command4 =>
             next_state <= state_idle;
           when others =>                -- idle
@@ -325,9 +371,9 @@ begin
               data       <= c_command4;
               data_valid <= true;
             when state_data =>
-              data       <= seven_segment_display(current_digit);
+              data          <= seven_segment_display(current_digit);
               current_digit <= next_digit;
-              data_valid <= true;
+              data_valid    <= true;
             when others =>              -- idle
               tm1638_stb <= '1';
           end case;

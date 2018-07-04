@@ -1,2 +1,11 @@
-tec1.xdc
 vivado_build_tec1.tcl
+tec1.cache/*
+tec1.hw/*
+tec1.runs/*
+tec1.ip_user_files/*
+tec1.xdc
+tec1.xpr
+.Xil/*
+vivado*.jou
+vivado*.log
+vivado*.str
