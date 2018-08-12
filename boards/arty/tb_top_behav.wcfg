@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="tb_top_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="tb_top" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="9000219627273fs"></ZoomStartTime>
+      <ZoomEndTime time="9010985263638fs"></ZoomEndTime>
+      <Cursor1Time time="9002013900000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="175"></NameColumnWidth>
+      <ValueColumnWidth column_width="141"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="27" />
+   <wave_markers>
+      <marker label="" time="151943139000000" />
+      <marker label="" time="55649151458000" />
+   </wave_markers>
+   <wvobject type="logic" fp_name="/tb_top/top_1/reset">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/mmcm_locked">
+      <obj_property name="ElementShortName">mmcm_locked</obj_property>
+      <obj_property name="ObjectShortName">mmcm_locked</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/CLK100MHZ">
+      <obj_property name="ElementShortName">CLK100MHZ</obj_property>
+      <obj_property name="ObjectShortName">CLK100MHZ</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/clk_2m">
+      <obj_property name="ElementShortName">clk_2m</obj_property>
+      <obj_property name="ObjectShortName">clk_2m</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/clk_4m">
+      <obj_property name="ElementShortName">clk_4m</obj_property>
+      <obj_property name="ObjectShortName">clk_4m</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/clk_2m_toggle">
+      <obj_property name="ElementShortName">clk_2m_toggle</obj_property>
+      <obj_property name="ObjectShortName">clk_2m_toggle</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/clk_4m_toggle">
+      <obj_property name="ElementShortName">clk_4m_toggle</obj_property>
+      <obj_property name="ObjectShortName">clk_4m_toggle</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/jb">
+      <obj_property name="ElementShortName">jb[7:0]</obj_property>
+      <obj_property name="ObjectShortName">jb[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/jc">
+      <obj_property name="ElementShortName">jc[7:0]</obj_property>
+      <obj_property name="ObjectShortName">jc[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/one_hz">
+      <obj_property name="ElementShortName">one_hz[31:0]</obj_property>
+      <obj_property name="ObjectShortName">one_hz[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/tb_top/top_1/keypad_b/divider">
+      <obj_property name="ElementShortName">divider</obj_property>
+      <obj_property name="ObjectShortName">divider</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/tb_top/pressed">
+      <obj_property name="ElementShortName">pressed</obj_property>
+      <obj_property name="ObjectShortName">pressed</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/tb_top/top_1/keypad_b/column">
+      <obj_property name="ElementShortName">column</obj_property>
+      <obj_property name="ObjectShortName">column</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/keypad_row">
+      <obj_property name="ElementShortName">keypad_row[3:0]</obj_property>
+      <obj_property name="ObjectShortName">keypad_row[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/keypad_column">
+      <obj_property name="ElementShortName">keypad_column[3:0]</obj_property>
+      <obj_property name="ObjectShortName">keypad_column[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/top_1/keypad_row">
+      <obj_property name="ElementShortName">keypad_row[3:0]</obj_property>
+      <obj_property name="ObjectShortName">keypad_row[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/top_1/keypad_column">
+      <obj_property name="ElementShortName">keypad_column[3:0]</obj_property>
+      <obj_property name="ObjectShortName">keypad_column[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/top_1/keypad_discrete">
+      <obj_property name="ElementShortName">keypad_discrete[3:0]</obj_property>
+      <obj_property name="ObjectShortName">keypad_discrete[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/top_1/keypad_b/allkeys">
+      <obj_property name="ElementShortName">allkeys[19:0]</obj_property>
+      <obj_property name="ObjectShortName">allkeys[19:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/top_1/keypad_b/allkeys_1d">
+      <obj_property name="ElementShortName">allkeys_1d[19:0]</obj_property>
+      <obj_property name="ObjectShortName">allkeys_1d[19:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/top_1/keypad_b/allkeys_2d">
+      <obj_property name="ElementShortName">allkeys_2d[19:0]</obj_property>
+      <obj_property name="ObjectShortName">allkeys_2d[19:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_top/top_1/keypad_data">
+      <obj_property name="ElementShortName">keypad_data[4:0]</obj_property>
+      <obj_property name="ObjectShortName">keypad_data[4:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/keypad_data_v">
+      <obj_property name="ElementShortName">keypad_data_v</obj_property>
+      <obj_property name="ObjectShortName">keypad_data_v</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/tm1638_data">
+      <obj_property name="ElementShortName">tm1638_data</obj_property>
+      <obj_property name="ObjectShortName">tm1638_data</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/tm1638_clk">
+      <obj_property name="ElementShortName">tm1638_clk</obj_property>
+      <obj_property name="ObjectShortName">tm1638_clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_top/top_1/tm1638_stb">
+      <obj_property name="ElementShortName">tm1638_stb</obj_property>
+      <obj_property name="ObjectShortName">tm1638_stb</obj_property>
+   </wvobject>
+</wave_config>
